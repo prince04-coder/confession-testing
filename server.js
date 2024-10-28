@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
-require('dotenv').config();  // Load environment variables
 
 const Chat = require('./models/Chat');
 const Comment = require('./models/Comment');
@@ -16,15 +15,15 @@ const io = socketIo(server, {
       methods: ["GET", "POST"]
     }
   });
-
-// Middleware setup
-app.use(cors());  // Use CORS middleware correctly
+// Middleware for parsing URL-encoded data
 app.use(express.urlencoded({ extended: false }));
+app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('public')); // Serve static files from the public directory
+require('dotenv').config();
+console.log(process.env.MONGO_URI)
 
 // MongoDB connection
-
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
     console.log('MongoDB connection successful');
@@ -32,6 +31,8 @@ mongoose.connect(process.env.MONGO_URI)
 .catch((err) => {
     console.error('MongoDB connection error:', err);
 });
+
+
 
 // Socket.IO logic
 io.on('connection', (socket) => {
@@ -52,9 +53,13 @@ io.on('connection', (socket) => {
         const { senderId, message } = msgData;
 
         try {
+
+            console.log(1)
+            // Save message to MongoDB
             const chatMessage = new Chat({ senderId, message });
             await chatMessage.save();
 
+            // Broadcast the saved message with MongoDB ID to all users
             io.emit('message', chatMessage);
         } catch (err) {
             console.error('Error saving message:', err);
@@ -66,29 +71,34 @@ io.on('connection', (socket) => {
         const { chatId, commenterId, comment } = commentData;
 
         try {
+            // Save the comment to MongoDB
             const newComment = new Comment({ chatId, commenterId, comment });
             await newComment.save();
 
+            // Broadcast the new comment to all connected users
             io.emit('comment', { chatId, commenterId, comment });
         } catch (err) {
             console.error('Error saving comment:', err);
         }
     });
 
-    // Fetch comment history for a specific chatId
-    socket.on('getHistoryComment', async (chatId) => {
-        try {
-            const commentHistory = await Comment.find({ chatId }).sort({ timestamp: 1 });
-            socket.emit('commentHistory', commentHistory);
-        } catch (err) {
-            console.error('Error retrieving comment history:', err);
-        }
-    });
+
+   // Fetch comment history for a specific chatId when a user connects
+socket.on('getHistoryComment', async (chatId) => {
+    try {
+        const commentHistory = await Comment.find({ chatId }).sort({ timestamp: 1 });
+        socket.emit('commentHistory', commentHistory);
+    } catch (err) {
+        console.error('Error retrieving comment history:', err);
+    }
+});
 
     socket.on('disconnect', () => {
         console.log('A user disconnected');
     });
 });
+
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;
