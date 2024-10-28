@@ -26,7 +26,7 @@
             margin: 20px 0;
         }
 
-        #messageInput, #userId {
+        #messageInput, #userId, #toUserId {
             padding: 5px;
             margin: 5px;
         }
@@ -43,6 +43,7 @@
     <!-- Input fields for sending messages -->
     <div>
         <input type="text" id="userId" placeholder="Enter your User ID">
+        <input type="text" id="toUserId" placeholder="Enter Recipient User ID">
         <input type="text" id="messageInput" placeholder="Enter your message">
         <button id="sendBtn">Send Message</button>
     </div>
@@ -58,6 +59,7 @@
 
         // HTML elements
         const userIdInput = document.getElementById('userId');
+        const toUserIdInput = document.getElementById('toUserId');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
         const chatHistory = document.getElementById('chatHistory');
@@ -69,17 +71,18 @@
         socket.on('chatHistory', (messages) => {
             chatHistory.innerHTML = ''; // Clear current chat history
             messages.forEach((msg) => {
-                addMessageToChat(msg.senderId, msg.message);
+                addMessageToChat(msg.senderId, msg.to, msg.message);
             });
         });
 
         // Send a new message when the "Send" button is clicked
         sendBtn.addEventListener('click', () => {
             const senderId = userIdInput.value.trim();
+            const recipientId = toUserIdInput.value.trim();
             const message = messageInput.value.trim();
 
-            if (senderId && message) {
-                const msgData = { senderId, message };
+            if (senderId && recipientId && message) {
+                const msgData = { senderId, to: recipientId, message };
                 socket.emit('message', msgData); // Send message to server
 
                 messageInput.value = ''; // Clear input field
@@ -88,13 +91,13 @@
 
         // Receive new incoming messages from the server
         socket.on('message', (msgData) => {
-            addMessageToChat(msgData.senderId, msgData.message);
+            addMessageToChat(msgData.senderId, msgData.to, msgData.message);
         });
 
         // Helper function to display messages in chat history
-        function addMessageToChat(senderId, message) {
+        function addMessageToChat(senderId, recipientId, message) {
             const messageElem = document.createElement('p');
-            messageElem.textContent = `${senderId}: ${message}`;
+            messageElem.textContent = `${senderId} to ${recipientId}: ${message}`;
             chatHistory.appendChild(messageElem);
         }
     </script>

@@ -50,13 +50,13 @@ io.on('connection', (socket) => {
 
     // Handle incoming messages
     socket.on('message', async (msgData) => {
-        const { senderId, message } = msgData;
+        const { to, senderId, message } = msgData;
 
         try {
 
             console.log(1)
             // Save message to MongoDB
-            const chatMessage = new Chat({ senderId, message });
+            const chatMessage = new Chat({ to, senderId, message });
             await chatMessage.save();
 
             // Broadcast the saved message with MongoDB ID to all users
