@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comment Test</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Comment System Test</h1>
+    
+    <!-- Input for Chat ID to get comments history -->
+    <div>
+        <label for="chatId">Chat ID:</label>
+        <input type="text" id="chatId" placeholder="Enter Chat ID">
+        <button onclick="fetchCommentHistory()">Get Comment History</button>
+    </div>
+    
+    <!-- Display Comment History -->
+    <div>
+        <h2>Comment History</h2>
+        <ul id="commentHistory"></ul>
+    </div>
+
+    <!-- Input to add a new comment -->
+    <div>
+        <h2>Add a Comment</h2>
+        <label for="commenterId">Commenter ID:</label>
+        <input type="text" id="commenterId" placeholder="Enter your ID">
+        <label for="commentText">Comment:</label>
+        <input type="text" id="commentText" placeholder="Enter your comment">
+        <button onclick="addComment()">Submit Comment</button>
+    </div>
+
+    <script>
+        // Replace 'SERVER_URL' with the URL of your server
+        const socket = io('http://localhost:3000');
+
+        // Function to fetch comment history for a specific chatId
+        function fetchCommentHistory() {
+            const chatId = document.getElementById('chatId').value;
+            if (!chatId) {
+                alert('Please enter a Chat ID.');
+                return;
+            }
+            // Emit getHistoryComment event with the chatId
+            socket.emit('getHistoryComment', chatId);
+        }
+
+        // Listen for commentHistory event from the server
+        socket.on('commentHistory', (commentHistory) => {
+            const historyList = document.getElementById('commentHistory');
+            historyList.innerHTML = ''; // Clear previous history
+
+            commentHistory.forEach(comment => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `[${comment.timestamp}] ${comment.commenterId}: ${comment.comment}`;
+                historyList.appendChild(listItem);
+            });
+        });
+
+        // Function to add a new comment
+        function addComment() {
+            const chatId = document.getElementById('chatId').value;
+            const commenterId = document.getElementById('commenterId').value;
+            const commentText = document.getElementById('commentText').value;
+
+            if (!chatId || !commenterId || !commentText) {
+                alert('Please enter Chat ID, Commenter ID, and Comment.');
+                return;
+            }
+
+            // Emit comment event with the new comment data
+            const commentData = { chatId, commenterId, comment: commentText };
+            socket.emit('comment', commentData);
+        }
+
+        // Listen for new comments broadcast from the server
+        socket.on('comment', (newComment) => {
+            const { chatId, commenterId, comment } = newComment;
+            const historyList = document.getElementById('commentHistory');
+
+            const listItem = document.createElement('li');
+            listItem.textContent = `[${new Date().toLocaleString()}] ${commenterId}: ${comment}`;
+            historyList.appendChild(listItem);
+        });
+    </script>
+</body>
+</html>

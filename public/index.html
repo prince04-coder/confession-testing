@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <style>
+        /* Styling for Chat UI */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #chatHistory {
+            width: 300px;
+            height: 400px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            padding: 10px;
+            margin: 20px 0;
+        }
+
+        #messageInput, #userId {
+            padding: 5px;
+            margin: 5px;
+        }
+
+        #sendBtn {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat App</h1>
+
+    <!-- Input fields for sending messages -->
+    <div>
+        <input type="text" id="userId" placeholder="Enter your User ID">
+        <input type="text" id="messageInput" placeholder="Enter your message">
+        <button id="sendBtn">Send Message</button>
+    </div>
+
+    <!-- Display area for chat history -->
+    <div id="chatHistory"></div>
+
+    <!-- Include the Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        // Connect to Socket.IO server
+        const socket = io('http://localhost:3000'); // Change the URL for production if needed
+
+        // HTML elements
+        const userIdInput = document.getElementById('userId');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatHistory = document.getElementById('chatHistory');
+
+        // Request chat history when the page loads
+        socket.emit('getHistory');
+
+        // Listen for chat history from the server and display it
+        socket.on('chatHistory', (messages) => {
+            chatHistory.innerHTML = ''; // Clear current chat history
+            messages.forEach((msg) => {
+                addMessageToChat(msg.senderId, msg.message);
+            });
+        });
+
+        // Send a new message when the "Send" button is clicked
+        sendBtn.addEventListener('click', () => {
+            const senderId = userIdInput.value.trim();
+            const message = messageInput.value.trim();
+
+            if (senderId && message) {
+                const msgData = { senderId, message };
+                socket.emit('message', msgData); // Send message to server
+
+                messageInput.value = ''; // Clear input field
+            }
+        });
+
+        // Receive new incoming messages from the server
+        socket.on('message', (msgData) => {
+            addMessageToChat(msgData.senderId, msgData.message);
+        });
+
+        // Helper function to display messages in chat history
+        function addMessageToChat(senderId, message) {
+            const messageElem = document.createElement('p');
+            messageElem.textContent = `${senderId}: ${message}`;
+            chatHistory.appendChild(messageElem);
+        }
+    </script>
+</body>
+</html>
