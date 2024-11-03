@@ -54,7 +54,11 @@
 
             commentHistory.forEach(comment => {
                 const listItem = document.createElement('li');
-                listItem.textContent = `[${comment.timestamp}] ${comment.commenterId}: ${comment.comment}`;
+                
+                // Convert timestamp to IST
+                const timestampIST = new Date(comment.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+                listItem.textContent = `[${timestampIST}] ${comment.commenterId}: ${comment.comment}`;
+                
                 historyList.appendChild(listItem);
             });
         });
@@ -77,11 +81,13 @@
 
         // Listen for new comments broadcast from the server
         socket.on('comment', (newComment) => {
-            const { chatId, commenterId, comment } = newComment;
+            const { chatId, commenterId, comment, timestamp } = newComment;
             const historyList = document.getElementById('commentHistory');
 
+            // Convert timestamp to IST
+            const timestampIST = new Date(timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
             const listItem = document.createElement('li');
-            listItem.textContent = `[${new Date().toLocaleString()}] ${commenterId}: ${comment}`;
+            listItem.textContent = `[${timestampIST}] ${commenterId}: ${comment}`;
             historyList.appendChild(listItem);
         });
     </script>

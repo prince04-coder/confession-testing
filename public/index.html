@@ -71,7 +71,7 @@
         socket.on('chatHistory', (messages) => {
             chatHistory.innerHTML = ''; // Clear current chat history
             messages.forEach((msg) => {
-                addMessageToChat(msg.senderId, msg.to, msg.message);
+                addMessageToChat(msg.senderId, msg.to, msg.message, msg.timestamp);
             });
         });
 
@@ -91,13 +91,23 @@
 
         // Receive new incoming messages from the server
         socket.on('message', (msgData) => {
-            addMessageToChat(msgData.senderId, msgData.to, msgData.message);
+            addMessageToChat(msgData.senderId, msgData.to, msgData.message, msgData.timestamp);
         });
 
-        // Helper function to display messages in chat history
-        function addMessageToChat(senderId, recipientId, message) {
+        // Helper function to display messages in chat history with timestamp
+        function addMessageToChat(senderId, recipientId, message, timestamp) {
             const messageElem = document.createElement('p');
-            messageElem.textContent = `${senderId} to ${recipientId}: ${message}`;
+            
+            // Convert timestamp to IST
+            const date = new Date(timestamp);
+            const formattedTimestamp = date.toLocaleString('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            messageElem.textContent = `[${formattedTimestamp}] ${senderId} to ${recipientId}: ${message}`;
             chatHistory.appendChild(messageElem);
         }
     </script>
