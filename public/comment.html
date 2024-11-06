@@ -22,6 +22,12 @@
         <ul id="commentHistory"></ul>
     </div>
 
+    <!-- Display Comment Count -->
+    <div>
+        <h2>Comment Count</h2>
+        <p id="commentCount">Comment count will be displayed here.</p>
+    </div>
+
     <!-- Input to add a new comment -->
     <div>
         <h2>Add a Comment</h2>
@@ -36,7 +42,7 @@
         // Replace 'SERVER_URL' with the URL of your server
         const socket = io('http://localhost:3000');
 
-        // Function to fetch comment history for a specific chatId
+        // Function to fetch comment history and count for a specific chatId
         function fetchCommentHistory() {
             const chatId = document.getElementById('chatId').value;
             if (!chatId) {
@@ -51,6 +57,10 @@
         socket.on('commentHistory', (commentHistory) => {
             const historyList = document.getElementById('commentHistory');
             historyList.innerHTML = ''; // Clear previous history
+
+            // Display the count of comments
+            const commentCount = commentHistory.length;
+            document.getElementById('commentCount').textContent = `Comment Count: ${commentCount}`;
 
             commentHistory.forEach(comment => {
                 const listItem = document.createElement('li');
@@ -89,6 +99,10 @@
             const listItem = document.createElement('li');
             listItem.textContent = `[${timestampIST}] ${commenterId}: ${comment}`;
             historyList.appendChild(listItem);
+
+            // Update the comment count
+            const commentCount = document.getElementById('commentHistory').childElementCount;
+            document.getElementById('commentCount').textContent = `Comment Count: ${commentCount}`;
         });
     </script>
 </body>

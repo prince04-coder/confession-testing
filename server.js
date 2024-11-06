@@ -37,38 +37,39 @@ mongoose.connect(process.env.MONGO_URI)
 io.on('connection', (socket) => {
     console.log('A user connected');
 
-    // Fetch chat history in IST when a user connects
+    // Fetch chat history with comment counts
     socket.on('getHistory', async () => {
         try {
             const chatHistory = await Chat.find().sort({ timestamp: 1 });
 
-            // Convert each chat's timestamp to IST
-            const chatHistoryIST = chatHistory.map(chat => ({
-                ...chat.toObject(),
-                timestamp: moment(chat.timestamp).tz("Asia/Kolkata").format()
+            // Fetch comment counts for each chat
+            const chatHistoryWithComments = await Promise.all(chatHistory.map(async (chat) => {
+                const commentCount = await Comment.countDocuments({ chatId: chat._id.toString() });
+                return {
+                    ...chat.toObject(),
+                    timestamp: moment(chat.timestamp).tz("Asia/Kolkata").format(),
+                    commentCount  // Include comment count
+                };
             }));
 
-            socket.emit('chatHistory', chatHistoryIST);
+            socket.emit('chatHistory', chatHistoryWithComments);
         } catch (err) {
             console.error('Error retrieving chat history:', err);
         }
     });
 
-    // Handle incoming messages and save timestamp in IST
+    // Handle incoming messages
     socket.on('message', async (msgData) => {
         const { to, senderId, message } = msgData;
-
         try {
-            // Save message to MongoDB with timestamp in IST
             const chatMessage = new Chat({
                 to,
                 senderId,
                 message,
-                timestamp: moment().tz("Asia/Kolkata").toDate()  // Set timestamp to IST
+                timestamp: moment().tz("Asia/Kolkata").toDate()
             });
             await chatMessage.save();
 
-            // Broadcast the saved message with IST timestamp to all users
             const messageIST = {
                 ...chatMessage.toObject(),
                 timestamp: moment(chatMessage.timestamp).tz("Asia/Kolkata").format()
@@ -79,21 +80,18 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle comments on messages and save timestamp in IST
+    // Handle comments on messages
     socket.on('comment', async (commentData) => {
         const { chatId, commenterId, comment } = commentData;
-
         try {
-            // Save the comment to MongoDB with timestamp in IST
             const newComment = new Comment({
                 chatId,
                 commenterId,
                 comment,
-                timestamp: moment().tz("Asia/Kolkata").toDate()  // Set timestamp to IST
+                timestamp: moment().tz("Asia/Kolkata").toDate()
             });
             await newComment.save();
 
-            // Broadcast the new comment with IST timestamp to all connected users
             const commentIST = {
                 ...newComment.toObject(),
                 timestamp: moment(newComment.timestamp).tz("Asia/Kolkata").format()
@@ -104,17 +102,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Fetch comment history for a specific chatId in IST when a user connects
+    // Fetch comment history for a specific chatId
     socket.on('getHistoryComment', async (chatId) => {
         try {
             const commentHistory = await Comment.find({ chatId }).sort({ timestamp: 1 });
-
-            // Convert each comment's timestamp to IST
             const commentHistoryIST = commentHistory.map(comment => ({
                 ...comment.toObject(),
                 timestamp: moment(comment.timestamp).tz("Asia/Kolkata").format()
             }));
-
             socket.emit('commentHistory', commentHistoryIST);
         } catch (err) {
             console.error('Error retrieving comment history:', err);
@@ -125,6 +120,7 @@ io.on('connection', (socket) => {
         console.log('A user disconnected');
     });
 });
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;

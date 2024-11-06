@@ -71,7 +71,7 @@
         socket.on('chatHistory', (messages) => {
             chatHistory.innerHTML = ''; // Clear current chat history
             messages.forEach((msg) => {
-                addMessageToChat(msg.senderId, msg.to, msg.message, msg.timestamp);
+                addMessageToChat(msg.senderId, msg.to, msg.message, msg.timestamp, msg.commentCount);
             });
         });
 
@@ -91,11 +91,11 @@
 
         // Receive new incoming messages from the server
         socket.on('message', (msgData) => {
-            addMessageToChat(msgData.senderId, msgData.to, msgData.message, msgData.timestamp);
+            addMessageToChat(msgData.senderId, msgData.to, msgData.message, msgData.timestamp, 0); // Initially no comments
         });
 
-        // Helper function to display messages in chat history with timestamp
-        function addMessageToChat(senderId, recipientId, message, timestamp) {
+        // Helper function to display messages in chat history with timestamp and comment count
+        function addMessageToChat(senderId, recipientId, message, timestamp, commentCount) {
             const messageElem = document.createElement('p');
             
             // Convert timestamp to IST
@@ -107,7 +107,7 @@
                 second: '2-digit'
             });
 
-            messageElem.textContent = `[${formattedTimestamp}] ${senderId} to ${recipientId}: ${message}`;
+            messageElem.textContent = `[${formattedTimestamp}] ${senderId} to ${recipientId}: ${message} - Comments: ${commentCount}`;
             chatHistory.appendChild(messageElem);
         }
     </script>
